@@ -216,6 +216,81 @@ class FloorplanObjectListViewsTestCase(TestCase):
         self.assertHttpStatus(response, 200)
 
 
+class PickerChildLocationTestCase(TestCase):
+    """
+    A location floorplan's pickers offer the racks and unracked devices of the location and of
+    its child locations, but not those of sibling or parent locations.
+    """
+    user_permissions = ()
+
+    @classmethod
+    def setUpTestData(cls):
+        from dcim.models import Device, DeviceRole, DeviceType, Manufacturer, Rack
+        cls.site = Site.objects.create(name='Site 1', slug='site-1')
+        cls.building = Location.objects.create(name='Building', slug='building', site=cls.site)
+        cls.room = Location.objects.create(
+            name='Room', slug='room', site=cls.site, parent=cls.building
+        )
+        cls.row = Location.objects.create(name='Row', slug='row', site=cls.site, parent=cls.room)
+        cls.other = Location.objects.create(name='Other', slug='other', site=cls.site)
+
+        for location in (cls.building, cls.room, cls.row, cls.other):
+            Rack.objects.create(
+                name=f'rack-{location.slug}', site=cls.site, location=location
+            )
+
+        manufacturer = Manufacturer.objects.create(name='Manufacturer 1', slug='manufacturer-1')
+        device_type = DeviceType.objects.create(
+            manufacturer=manufacturer, model='Model 1', slug='model-1'
+        )
+        role = DeviceRole.objects.create(name='Role 1', slug='role-1')
+        for location in (cls.building, cls.room, cls.row, cls.other):
+            Device.objects.create(
+                name=f'device-{location.slug}', site=cls.site, location=location,
+                device_type=device_type, role=role,
+            )
+
+        cls.room_floorplan = Floorplan.objects.create(location=cls.room)
+        cls.row_floorplan = Floorplan.objects.create(location=cls.row)
+        cls.site_floorplan = Floorplan.objects.create(site=cls.site)
+
+    def _names(self, view, floorplan):
+        url = reverse(f'plugins:netbox_floorplan:floorplan_{view}_list')
+        response = self.client.get(f'{url}?floorplan_id={floorplan.pk}')
+        self.assertHttpStatus(response, 200)
+        content = response.content.decode()
+        kind = 'rack' if view == 'rack' else 'device'
+        return {
+            slug for slug in ('building', 'room', 'row', 'other')
+            if f'>{kind}-{slug}<' in content
+        }
+
+    def test_location_rack_picker_includes_child_locations(self):
+        self.add_permissions('dcim.view_rack')
+        self.assertEqual(self._names('rack', self.room_floorplan), {'room', 'row'})
+
+    def test_location_device_picker_includes_child_locations(self):
+        self.add_permissions('dcim.view_device')
+        self.assertEqual(self._names('device', self.room_floorplan), {'room', 'row'})
+
+    def test_leaf_location_picker_is_unchanged(self):
+        self.add_permissions('dcim.view_rack', 'dcim.view_device')
+        self.assertEqual(self._names('rack', self.row_floorplan), {'row'})
+        self.assertEqual(self._names('device', self.row_floorplan), {'row'})
+
+    def test_site_picker_offers_every_location(self):
+        self.add_permissions('dcim.view_rack')
+        self.assertEqual(
+            self._names('rack', self.site_floorplan), {'building', 'room', 'row', 'other'}
+        )
+
+    def test_picker_shows_the_location(self):
+        self.add_permissions('dcim.view_rack')
+        url = reverse('plugins:netbox_floorplan:floorplan_rack_list')
+        response = self.client.get(f'{url}?floorplan_id={self.room_floorplan.pk}')
+        self.assertIn(self.row.get_absolute_url(), response.content.decode())
+
+
 class MediaUrlExposureTestCase(TestCase):
     """
     The canvas needs NetBox's MEDIA_URL, so the templates publish it from Django settings

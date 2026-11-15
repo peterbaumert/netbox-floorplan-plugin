@@ -147,6 +147,19 @@ class FloorplanMapEditView(PermissionRequiredMixin, View):
         })
 
 
+def picker_scope(floorplan):
+    """
+    Filter for the racks and devices a floorplan's pickers offer.
+
+    A site floorplan offers everything at the site. A location floorplan offers everything in
+    the location and in its child locations: racks usually live in leaf locations (rooms,
+    rows), so an exact match left a floorplan on a parent location with nothing to place.
+    """
+    if floorplan.record_type == "site":
+        return {"site": floorplan.site_id}
+    return {"location__in": floorplan.location.get_descendants(include_self=True)}
+
+
 class FloorplanRackListView(generic.ObjectListView):
     # Grab the dcim/rack data from Netbox as well as the associated dcim/rack-role data if
     # the rack role is set
@@ -156,12 +169,8 @@ class FloorplanRackListView(generic.ObjectListView):
     def get(self, request):
         fp_id = request.GET["floorplan_id"]
         fp_instance = models.Floorplan.objects.get(pk=fp_id)
-        if fp_instance.record_type == "site":
-            self.queryset = Rack.objects.all().select_related("role", "rack_type").filter(~Q(id__in=fp_instance.mapped_racks)).filter(
-                site=fp_instance.site.id).order_by("name")
-        else:
-            self.queryset = Rack.objects.all().select_related("role", "rack_type").filter(~Q(id__in=fp_instance.mapped_racks)).filter(
-                location=fp_instance.location.id).order_by("name")
+        self.queryset = Rack.objects.select_related("role", "rack_type", "location").filter(
+            ~Q(id__in=fp_instance.mapped_racks), **picker_scope(fp_instance)).order_by("name")
         return super().get(request)
 
 
@@ -172,12 +181,8 @@ class FloorplanDeviceListView(generic.ObjectListView):
     def get(self, request):
         fp_id = request.GET["floorplan_id"]
         fp_instance = models.Floorplan.objects.get(pk=fp_id)
-        if fp_instance.record_type == "site":
-            self.queryset = Device.objects.all().filter(~Q(id__in=fp_instance.mapped_devices)).filter(
-                site=fp_instance.site.id, rack=None).order_by("name")
-        else:
-            self.queryset = Device.objects.all().filter(~Q(id__in=fp_instance.mapped_devices)).filter(
-                location=fp_instance.location.id, rack=None).order_by("name")
+        self.queryset = Device.objects.select_related("device_type", "location").filter(
+            ~Q(id__in=fp_instance.mapped_devices), rack=None, **picker_scope(fp_instance)).order_by("name")
         return super().get(request)
 
 

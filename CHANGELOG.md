@@ -1,5 +1,16 @@
 # Change Log
 
+## Unreleased
+
+### Features
+
+* **Location floorplans offer racks and devices from child locations** ([#7](https://github.com/netbox-community/netbox-floorplan-plugin/issues/7), [#62](https://github.com/netbox-community/netbox-floorplan-plugin/issues/62)).
+  The rack and device pickers in the editor matched the floorplan's location exactly, so
+  a floorplan on a parent location (a building or hall whose racks are assigned to rooms
+  or rows) had nothing to place. They now include the location's descendants. Floorplans
+  on leaf locations and on sites offer exactly what they did before. Both pickers gain a
+  Location column, so objects from different child locations can be told apart.
+
 ## v0.10.0
 
 **Targets NetBox 4.7.** The supported range is declared as a minimum of 4.7.0 and a

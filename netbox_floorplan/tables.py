@@ -34,6 +34,7 @@ class FloorplanTable(NetBoxTable):
 
 class FloorplanRackTable(NetBoxTable):
     name = tables.LinkColumn()
+    location = tables.Column(linkify=True)
     embedded = True
 
     role = tables.TemplateColumn(
@@ -72,8 +73,8 @@ class FloorplanRackTable(NetBoxTable):
     class Meta(NetBoxTable.Meta):
         model = Rack
         # Show the Rack name, role, and U-height in the table
-        fields = ('pk', 'name', 'role', 'u_height')
-        default_columns = ('pk', 'name', 'role', 'u_height')
+        fields = ('pk', 'name', 'location', 'role', 'u_height')
+        default_columns = ('pk', 'name', 'location', 'role', 'u_height')
         row_attrs = {
             'id': lambda record: 'object_rack_{}'.format(record.pk),
         }
@@ -81,6 +82,7 @@ class FloorplanRackTable(NetBoxTable):
 
 class FloorplanDeviceTable(NetBoxTable):
     name = tables.LinkColumn()
+    location = tables.Column(linkify=True)
     embedded = True
 
     actions = tables.TemplateColumn(template_code="""
@@ -98,8 +100,8 @@ class FloorplanDeviceTable(NetBoxTable):
 
     class Meta(NetBoxTable.Meta):
         model = Device
-        fields = ('pk', 'name', 'device_type')
-        default_columns = ('pk', 'name', 'device_type')
+        fields = ('pk', 'name', 'location', 'device_type')
+        default_columns = ('pk', 'name', 'location', 'device_type')
         row_attrs = {
             'id': lambda record: 'object_device_{}'.format(record.pk),
         }
