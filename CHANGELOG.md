@@ -4,6 +4,12 @@
 
 ### Features
 
+* **Rack and device labels fit their box.** The name and status or info text had fixed
+  sizes, so long names wrapped over several lines in a narrow rack and large boxes got tiny
+  text. Labels are now sized so they fit on single lines and are stacked centred in the box
+  (or below a device image), whenever a floorplan is loaded, an object is placed, its
+  footprint changes or its info lines are toggled. A **Text size** can be set per object
+  in the Footprint box (kept as `custom_meta.font_size`); **Auto** returns to the fitted size.
 * **Child locations as linked areas** ([#8](https://github.com/netbox-community/netbox-floorplan-plugin/issues/8)).
   The editor's new **Child Locations** tab adds a location below the floorplan's (or any
   location of the site, for a site floorplan) as a translucent area showing its name and
