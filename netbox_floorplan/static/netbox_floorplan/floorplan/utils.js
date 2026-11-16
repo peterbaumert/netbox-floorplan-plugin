@@ -20,6 +20,9 @@ export {
     floorplan_image_url,
     apply_background,
     canvas_to_json,
+    layout_labels,
+    auto_label_size,
+    fit_labels,
     is_itext,
     is_text
 };
@@ -421,6 +424,107 @@ function move_pan(opt, canvas) {
 
 
 
+
+// Rack and device labels ------------------------------------------------------------------------
+//
+// The labels of a placed rack or device are sized from its box unless a size was set by hand
+// (custom_meta.font_size on the group, the name's font size in drawing units). The name gets
+// that size, the status or info text 13/16 of it as before, and the labels are stacked centred
+// in the box, or below a device image. Laid out from scratch every time a floorplan is loaded,
+// so renames, footprint changes and older floorplans all come out right.
+
+// Advance width of Courier New, the labels' font, per unit of font size.
+const LABEL_CHAR_WIDTH = 0.6;
+const LABEL_SECONDARY_RATIO = 13 / 16;
+const LABEL_LINE_HEIGHT = 1.16;
+// Space between stacked labels, and between an image and its labels, per unit of font size.
+const LABEL_GAP = 0.15;
+const LABEL_MIN_SIZE = 1;
+const LABEL_MAX_SIZE = 1000;
+
+function is_placed_object(object) {
+    const type = object && object.custom_meta && object.custom_meta.object_type;
+    return (type == "rack" || type == "device") && Boolean(object._objects && object._objects.length);
+}
+
+function label_parts(group) {
+    const shape = group._objects[0];
+    const labels = group._objects.slice(1).filter(is_text);
+    const name = labels.find((label) => label.custom_meta && label.custom_meta.text_type == "name");
+    return {
+        shape: shape,
+        image: shape instanceof fabric.FabricImage,
+        width: shape.width * shape.scaleX,
+        height: shape.height * shape.scaleY,
+        name: name,
+        secondary: labels.filter((label) => label !== name),
+    };
+}
+
+function longest_line(text) {
+    return Math.max(1, ...String(text || "").split("\n").map((line) => line.length));
+}
+
+// The largest name size at which the name, and the status or info text below it, fit the box
+// on single lines. Under a device image only the width counts.
+function auto_label_size(group) {
+    const parts = label_parts(group);
+    const room = parts.width * 0.92;
+    let size = room / (LABEL_CHAR_WIDTH * longest_line(parts.name && parts.name.text));
+    const shown = parts.secondary.filter((label) => label.visible !== false && label.text);
+    shown.forEach(function (label) {
+        size = Math.min(size, room / (LABEL_CHAR_WIDTH * LABEL_SECONDARY_RATIO * longest_line(label.text)));
+    });
+    if (parts.image) {
+        size = Math.min(size, parts.width * 0.35);
+    } else {
+        const lines = shown.reduce((count, label) => count + String(label.text).split("\n").length, 0);
+        const per_size = LABEL_LINE_HEIGHT * (1 + LABEL_SECONDARY_RATIO * lines) + LABEL_GAP * shown.length;
+        size = Math.min(size, parts.height * 0.85 / per_size);
+    }
+    return Math.round(Math.min(LABEL_MAX_SIZE, Math.max(LABEL_MIN_SIZE, size)) * 10) / 10;
+}
+
+function label_size(group) {
+    const manual = group.custom_meta && group.custom_meta.font_size;
+    return manual > 0 ? manual : auto_label_size(group);
+}
+
+function layout_labels(group) {
+    if (!is_placed_object(group)) {
+        return;
+    }
+    const parts = label_parts(group);
+    const size = label_size(group);
+    const center = group.getCenterPoint();
+    const labels = (parts.name ? [parts.name] : []).concat(parts.secondary);
+    labels.forEach(function (label) {
+        label.set({ fontSize: label === parts.name ? size : size * LABEL_SECONDARY_RATIO });
+        if (label.type == "textbox") {
+            label.set({ width: parts.width });
+        }
+        label.initDimensions();
+    });
+    const shown = labels.filter((label) => label.visible !== false);
+    const heights = shown.map((label) => label.height * label.scaleY);
+    const gap = size * LABEL_GAP;
+    const total = heights.reduce((sum, height) => sum + height, 0) + gap * Math.max(0, shown.length - 1);
+    let y = parts.image ? parts.shape.top + parts.height / 2 + gap : parts.shape.top - total / 2;
+    shown.forEach(function (label, index) {
+        label.set({ left: parts.shape.left, top: y + heights[index] / 2 });
+        y += heights[index] + gap;
+    });
+    // Refit the group to its members and keep it where it was.
+    group.triggerLayout();
+    group.setPositionByOrigin(center, "center", "center");
+    group.setCoords();
+}
+
+function fit_labels(canvas) {
+    canvas.getObjects().forEach(layout_labels);
+    canvas.requestRenderAll();
+}
+
 // NetBox's MEDIA_URL, published by the floorplan templates from Django settings. The literal
 // is only a fallback for a page that did not set it.
 const MEDIA_URL = (typeof window !== "undefined" && window.NETBOX_MEDIA_URL) || "/media/";
@@ -557,6 +661,7 @@ function init_floor_plan(floorplan_id, canvas, mode) {
                     }
                 }
             ).then(function () {
+                fit_labels(canvas);
                 // Every object has been deserialised and added to the canvas, so the floorplan
                 // boundary now exists and the background can be fitted to it.
                 // Size the canvas before fitting: the fit depends on the canvas size, and fitting
