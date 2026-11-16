@@ -306,7 +306,9 @@ function layout_labels(group) {
     }
     const parts = label_parts(group);
     const size = label_size(group);
-    const center = group.getCenterPoint();
+    // The rack or device box is what must stay put. The group's own outline includes the
+    // labels, which can stick out of the box, so its centre moves when they are resized.
+    const anchor = parts.shape.getCenterPoint();
     const labels = (parts.name ? [parts.name] : []).concat(parts.secondary);
     labels.forEach(function (label) {
         label.set({ fontSize: label === parts.name ? size : size * LABEL_SECONDARY_RATIO });
@@ -324,9 +326,11 @@ function layout_labels(group) {
         label.set({ left: parts.shape.left, top: y + heights[index] / 2 });
         y += heights[index] + gap;
     });
-    // Refit the group to its members and keep it where it was.
+    // Refit the group to its members, then move it back so the box is where it was.
     group.triggerLayout();
-    group.setPositionByOrigin(center, "center", "center");
+    group.setCoords();
+    const moved = parts.shape.getCenterPoint();
+    group.set({ left: group.left + anchor.x - moved.x, top: group.top + anchor.y - moved.y });
     group.setCoords();
 }
 
