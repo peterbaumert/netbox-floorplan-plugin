@@ -9,7 +9,8 @@
   location of the site, for a site floorplan) as a translucent area showing its name and
   rack count. On the Floor Plan tab, clicking the area opens that location's floorplan.
   The name and rack count are refreshed from NetBox, and the area is removed when its
-  location is deleted.
+  location is deleted. Resizing an area sets its size rather than stretching its labels,
+  and keeps it where it was dragged.
 * **Location floorplans offer racks and devices from child locations** ([#7](https://github.com/netbox-community/netbox-floorplan-plugin/issues/7), [#62](https://github.com/netbox-community/netbox-floorplan-plugin/issues/62)).
   The rack and device pickers in the editor matched the floorplan's location exactly, so
   a floorplan on a parent location (a building or hall whose racks are assigned to rooms
