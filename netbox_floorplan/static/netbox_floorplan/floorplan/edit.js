@@ -1068,10 +1068,29 @@ function set_footprint(group, width, height) {
     canvas.requestRenderAll();
 }
 
+// The selected object whose text size can be set: a rack, a device or a child-location area.
+function labelled_object() {
+    const object = canvas.getActiveObject();
+    if (sizable_object()) {
+        return object;
+    }
+    return is_location_area(object) ? object : null;
+}
+
 function update_size_controls() {
     const controls = document.getElementById("size_controls");
+    const labelled = labelled_object();
     const group = sizable_object();
-    controls.classList.toggle("d-none", !group);
+    controls.classList.toggle("d-none", !labelled);
+    if (!labelled) {
+        return;
+    }
+    update_text_size_controls(labelled);
+    // Areas are resized with their handles; the footprint fields are for racks and devices.
+    document.getElementById("footprint_controls").classList.toggle("d-none", !group);
+    document.getElementById("size_controls_title").textContent = group
+        ? "Rack/Device Footprint and Text"
+        : "Location Area Text";
     if (!group) {
         return;
     }
@@ -1079,12 +1098,6 @@ function update_size_controls() {
     document.getElementById("size_width").value = Math.round(size.width * MM_PER_UNIT);
     document.getElementById("size_depth").value = Math.round(size.height * MM_PER_UNIT);
     const overridden = Boolean(group.custom_meta.size_override);
-    const manual_text = group.custom_meta.font_size > 0;
-    const name = group._objects.find((member) => member.custom_meta && member.custom_meta.text_type == "name");
-    document.getElementById("label_size").value = name ? Math.round(name.fontSize * MM_PER_UNIT) : "";
-    document.getElementById("label_size_source").textContent = manual_text
-        ? "Text size set manually."
-        : "Text size fitted to the box.";
     document.getElementById("size_source").textContent = overridden
         ? "Set manually."
         : (group.custom_meta.object_type == "rack" ? "From the rack type." : "Default device size.");
@@ -1104,10 +1117,18 @@ function apply_size() {
 }
 window.apply_size = apply_size;
 
+function update_text_size_controls(group) {
+    const name = group._objects.find((member) => member.custom_meta && member.custom_meta.text_type == "name");
+    document.getElementById("label_size").value = name ? Math.round(name.fontSize * MM_PER_UNIT) : "";
+    document.getElementById("label_size_source").textContent = group.custom_meta.font_size > 0
+        ? "Text size set manually."
+        : (is_location_area(group) ? "Text size fitted to the area." : "Text size fitted to the box.");
+}
+
 // Text size, shown and entered as the height of the name in millimetres on the floor, like
 // the footprint. Stored on the group as a font size in drawing units.
 function apply_label_size() {
-    const group = sizable_object();
+    const group = labelled_object();
     const size = parseFloat(document.getElementById("label_size").value);
     if (!group || !(size > 0)) {
         return;
@@ -1120,7 +1141,7 @@ function apply_label_size() {
 window.apply_label_size = apply_label_size;
 
 function reset_label_size() {
-    const group = sizable_object();
+    const group = labelled_object();
     if (!group) {
         return;
     }
@@ -1273,19 +1294,24 @@ function apply_location_scale(group) {
     const height = area.height * area.scaleY * group.scaleY;
     const sx = group.scaleX;
     const sy = group.scaleY;
-    // Where the resized area is now, in drawing coordinates. Resetting the scale keeps the
-    // group's top-left corner where the scaled group had it, and the relayout then centres
-    // the group on the unscaled size, so the area jumped by half the resize; put it back.
-    const center = group.getCenterPoint();
+    // Where the resized area is now, in drawing coordinates. Resetting the scale and the
+    // relayout move the group, so put the area back afterwards. Anchor on the area itself, not
+    // the group: the group's outline includes the labels, which can stick out of a shrunk area.
+    const anchor = area.getCenterPoint();
     group.set({ scaleX: 1, scaleY: 1 });
     area.set({ width: width, height: height, scaleX: 1, scaleY: 1 });
     group._objects.slice(1).forEach(function (label) {
-        label.set({ width: width, left: label.left * sx, top: label.top });
+        label.set({ width: width, left: label.left * sx, top: label.top * sy });
     });
     group.triggerLayout();
-    group.setPositionByOrigin(center, 'center', 'center');
     group.setCoords();
+    const moved = area.getCenterPoint();
+    group.set({ left: group.left + anchor.x - moved.x, top: group.top + anchor.y - moved.y });
+    group.setCoords();
+    // Automatic text sizes follow the new area.
+    layout_labels(group);
     canvas.requestRenderAll();
+    update_size_controls();
 }
 
 canvas.on('object:modified', function (opt) {

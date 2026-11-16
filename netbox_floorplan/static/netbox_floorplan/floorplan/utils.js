@@ -444,7 +444,13 @@ const LABEL_MAX_SIZE = 1000;
 
 function is_placed_object(object) {
     const type = object && object.custom_meta && object.custom_meta.object_type;
-    return (type == "rack" || type == "device") && Boolean(object._objects && object._objects.length);
+    return (type == "rack" || type == "device" || type == "location") && Boolean(object._objects && object._objects.length);
+}
+
+// A child-location area's labels name a room rather than fill it: they take at most part of
+// its width and height, and sit at the top so racks drawn inside do not cover them.
+function is_location_area_group(group) {
+    return group.custom_meta.object_type == "location";
 }
 
 function label_parts(group) {
@@ -469,7 +475,8 @@ function longest_line(text) {
 // on single lines. Under a device image only the width counts.
 function auto_label_size(group) {
     const parts = label_parts(group);
-    const room = parts.width * 0.92;
+    const area = is_location_area_group(group);
+    const room = parts.width * (area ? 0.6 : 0.92);
     let size = room / (LABEL_CHAR_WIDTH * longest_line(parts.name && parts.name.text));
     const shown = parts.secondary.filter((label) => label.visible !== false && label.text);
     shown.forEach(function (label) {
@@ -480,7 +487,7 @@ function auto_label_size(group) {
     } else {
         const lines = shown.reduce((count, label) => count + String(label.text).split("\n").length, 0);
         const per_size = LABEL_LINE_HEIGHT * (1 + LABEL_SECONDARY_RATIO * lines) + LABEL_GAP * shown.length;
-        size = Math.min(size, parts.height * 0.85 / per_size);
+        size = Math.min(size, parts.height * (area ? 0.3 : 0.85) / per_size);
     }
     return Math.round(Math.min(LABEL_MAX_SIZE, Math.max(LABEL_MIN_SIZE, size)) * 10) / 10;
 }
@@ -511,7 +518,9 @@ function layout_labels(group) {
     const heights = shown.map((label) => label.height * label.scaleY);
     const gap = size * LABEL_GAP;
     const total = heights.reduce((sum, height) => sum + height, 0) + gap * Math.max(0, shown.length - 1);
-    let y = parts.image ? parts.shape.top + parts.height / 2 + gap : parts.shape.top - total / 2;
+    let y = parts.image ? parts.shape.top + parts.height / 2 + gap
+        : is_location_area_group(group) ? parts.shape.top - parts.height / 2 + 2 * gap
+        : parts.shape.top - total / 2;
     shown.forEach(function (label, index) {
         label.set({ left: parts.shape.left, top: y + heights[index] / 2 });
         y += heights[index] + gap;
