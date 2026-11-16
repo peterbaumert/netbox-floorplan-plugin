@@ -16,6 +16,8 @@ import {
     floorplan_image_url,
     apply_background,
     canvas_to_json,
+    layout_labels,
+    auto_label_size,
     is_itext,
     is_text
 } from "/static/netbox_floorplan/floorplan/utils.js";
@@ -55,6 +57,11 @@ canvas.on({
     "selection:updated": enable_button_selection,
     "selection:created": enable_button_selection,
     "selection:cleared": disable_button_selection,
+});
+
+// Newly placed racks and devices get labels sized to their box.
+canvas.on('object:added', function (opt) {
+    layout_labels(opt.target);
 });
 
 canvas.on({
@@ -915,6 +922,7 @@ function toggle_text_visibility(text_type, visible) {
                     obj.set('visible', hasVisibleContent && infoLines.length > 0);
                 }
             });
+            layout_labels(object);
             //canvas.renderAll();
             //save_floorplan();
         }
@@ -1040,6 +1048,8 @@ function set_footprint(group, width, height) {
     // where it is.
     group.triggerLayout();
     group.setCoords();
+    // Automatic label sizes follow the new box.
+    layout_labels(group);
     canvas.requestRenderAll();
 }
 
@@ -1054,6 +1064,12 @@ function update_size_controls() {
     document.getElementById("size_width").value = Math.round(size.width * MM_PER_UNIT);
     document.getElementById("size_depth").value = Math.round(size.height * MM_PER_UNIT);
     const overridden = Boolean(group.custom_meta.size_override);
+    const manual_text = group.custom_meta.font_size > 0;
+    const name = group._objects.find((member) => member.custom_meta && member.custom_meta.text_type == "name");
+    document.getElementById("label_size").value = name ? Math.round(name.fontSize * MM_PER_UNIT) : "";
+    document.getElementById("label_size_source").textContent = manual_text
+        ? "Text size set manually."
+        : "Text size fitted to the box.";
     document.getElementById("size_source").textContent = overridden
         ? "Set manually."
         : (group.custom_meta.object_type == "rack" ? "From the rack type." : "Default device size.");
@@ -1072,6 +1088,33 @@ function apply_size() {
     update_size_controls();
 }
 window.apply_size = apply_size;
+
+// Text size, shown and entered as the height of the name in millimetres on the floor, like
+// the footprint. Stored on the group as a font size in drawing units.
+function apply_label_size() {
+    const group = sizable_object();
+    const size = parseFloat(document.getElementById("label_size").value);
+    if (!group || !(size > 0)) {
+        return;
+    }
+    group.custom_meta.font_size = size / MM_PER_UNIT;
+    layout_labels(group);
+    canvas.requestRenderAll();
+    update_size_controls();
+}
+window.apply_label_size = apply_label_size;
+
+function reset_label_size() {
+    const group = sizable_object();
+    if (!group) {
+        return;
+    }
+    delete group.custom_meta.font_size;
+    layout_labels(group);
+    canvas.requestRenderAll();
+    update_size_controls();
+}
+window.reset_label_size = reset_label_size;
 
 // The size NetBox gives the object: a rack's rack type outer dimensions (or the rack's own,
 // for a rack without a rack type), the default for a rack without any, or the device default.

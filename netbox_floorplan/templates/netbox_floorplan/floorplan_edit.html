@@ -173,7 +173,7 @@
                                     </div>
                                     <div class="mb-3 d-none" id="size_controls">
                                         <div class="mb-1">
-                                            <label class="form-label">Rack/Device Footprint</label>
+                                            <label class="form-label">Rack/Device Footprint and Text</label>
                                         </div>
                                         <div class="input-group mb-1">
                                             <span class="input-group-text">Width</span>
@@ -185,6 +185,14 @@
                                         <a class="btn btn-outline-secondary" onclick="apply_size()">Apply</a>
                                         <a class="btn btn-outline-secondary" id="reset_size" onclick="reset_size()">Reset to NetBox Size</a>
                                         <div class="form-text" id="size_source"></div>
+                                        <div class="input-group mt-2 mb-1">
+                                            <span class="input-group-text">Text size</span>
+                                            <input type="number" id="label_size" class="form-control" min="1" step="10" aria-label="Text size in millimetres">
+                                            <span class="input-group-text">mm</span>
+                                        </div>
+                                        <a class="btn btn-outline-secondary" onclick="apply_label_size()">Apply</a>
+                                        <a class="btn btn-outline-secondary" onclick="reset_label_size()">Auto</a>
+                                        <div class="form-text" id="label_size_source"></div>
                                     </div>
                                     <div class="mb-3">
                                         <div class="mb-1">
