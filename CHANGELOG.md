@@ -4,6 +4,12 @@
 
 ### Features
 
+* **Rack and device labels fit their box.** The name and status or info text had fixed
+  sizes, so long names wrapped over several lines in a narrow rack and large boxes got tiny
+  text. Labels are now sized so they fit on single lines and are stacked centred in the box
+  (or below a device image), whenever a floorplan is loaded, an object is placed, its
+  footprint changes or its info lines are toggled. A **Text size** can be set per object
+  in the Footprint box (kept as `custom_meta.font_size`); **Auto** returns to the fitted size.
 * **Set the footprint of a placed rack or device.** Selecting one in the editor shows its
   width and depth in millimetres, which can be changed and applied; **Reset to NetBox Size**
   returns to the rack type's outer dimensions (or the defaults). Useful for devices, which

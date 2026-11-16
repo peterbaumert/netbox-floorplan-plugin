@@ -71,6 +71,8 @@ Racks are placed at their rack type's outer width and depth (or the rack's own, 
 
 To change the size of a placed rack or device, select it and enter a width and depth in millimetres under **Rack/Device Footprint**, then **Apply**. The size is kept with the floorplan when you **Save**. **Reset to NetBox Size** removes it and applies the size NetBox currently gives the object.
 
+Labels are sized to the box: the name gets the largest size at which it, and the status or info text below it, fit on single lines, and grows or shrinks with the footprint. To use a fixed size instead, enter a **Text size** (the height of the name, in millimetres on the floor) and **Apply**; **Auto** goes back to fitting the box.
+
 The size is taken when the object is placed: changing a rack type's dimensions later does not resize racks already on a floorplan. Use **Reset to NetBox Size**, or remove the rack and place it again.
 
 ## Locking and Navigation
