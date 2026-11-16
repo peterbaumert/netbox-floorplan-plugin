@@ -73,6 +73,12 @@ To change the size of a placed rack or device, select it and enter a width and d
 
 The size is taken when the object is placed: changing a rack type's dimensions later does not resize racks already on a floorplan. Use **Reset to NetBox Size**, or remove the rack and place it again.
 
+## Child Locations
+
+A floorplan can show the locations below it, for example the rooms on a floor plan or the floors on a building plan, as areas that link to their own floorplans. In the editor, the **Child Locations** tab lists the locations under the floorplan's location (or every location of the site, for a site floorplan) that are not on the drawing yet, with the number of racks in each, counting their child locations too. **Add Area** draws the location as a translucent area labelled with its name and rack count. Move, resize and rotate it to cover the room on the background.
+
+On the Floor Plan tab, clicking the area opens that location's own Floor Plan tab, so a site can be explored from the building down to a single room. Renaming the location updates the label, the rack count follows NetBox, and deleting the location removes the area. Areas sit behind racks and devices, so these stay clickable.
+
 ## Locking and Navigation
 
 * **Lock** fixes an object in place so it cannot be dragged or resized accidentally. Useful for walls and areas once the outline is right.
