@@ -31,6 +31,9 @@
 
 ### Bug Fixes
 
+* **The background follows the floorplan dimensions.** It is fitted to the floorplan
+  boundary, but only on load and when an image is chosen, so after **Set Dimensions** it
+  kept its old size until the page was reloaded. It is now refitted straight away.
 * **Floorplans open fitted to the page** ([#110](https://github.com/netbox-community/netbox-floorplan-plugin/issues/110)).
   The drawing was fitted to the canvas before the canvas was resized, so it loaded as a
   small box in the corner and had to be zoomed on every visit. The canvas is now sized
