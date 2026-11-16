@@ -31,6 +31,11 @@
 
 ### Bug Fixes
 
+* **The Floor Plan tab no longer shows other plugins' page content.** The site and location
+  tabs used NetBox's SimpleLayout, which adds every plugin's `left_page`, `right_page` and
+  `full_width_page` content for the object, so a location panel from another plugin (such
+  as a QR code label) appeared on the Floor Plan tab too, and full-width content twice.
+  The tabs now show the floorplan only; that content stays on the object's own page.
 * **The background follows the floorplan dimensions.** It is fitted to the floorplan
   boundary, but only on load and when an image is chosen, so after **Set Dimensions** it
   kept its old size until the page was reloaded. It is now refitted straight away.
