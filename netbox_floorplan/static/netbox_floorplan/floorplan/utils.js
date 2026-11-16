@@ -448,7 +448,7 @@ function is_placed_object(object) {
 }
 
 // A child-location area's labels name a room rather than fill it: they take at most part of
-// its width and height, and sit at the top so racks drawn inside do not cover them.
+// its width and height, centred in the area.
 function is_location_area_group(group) {
     return group.custom_meta.object_type == "location";
 }
@@ -518,9 +518,7 @@ function layout_labels(group) {
     const heights = shown.map((label) => label.height * label.scaleY);
     const gap = size * LABEL_GAP;
     const total = heights.reduce((sum, height) => sum + height, 0) + gap * Math.max(0, shown.length - 1);
-    let y = parts.image ? parts.shape.top + parts.height / 2 + gap
-        : is_location_area_group(group) ? parts.shape.top - parts.height / 2 + 2 * gap
-        : parts.shape.top - total / 2;
+    let y = parts.image ? parts.shape.top + parts.height / 2 + gap : parts.shape.top - total / 2;
     shown.forEach(function (label, index) {
         label.set({ left: parts.shape.left, top: y + heights[index] / 2 });
         y += heights[index] + gap;

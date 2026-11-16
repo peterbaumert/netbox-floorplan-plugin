@@ -11,8 +11,8 @@
   footprint changes or its info lines are toggled. A **Text size** can be set per object
   in the Footprint box (kept as `custom_meta.font_size`); **Auto** returns to the fitted size.
   Child-location areas get the same: their name and rack count are fitted to the area (at
-  most 60% of its width and 30% of its height), placed at its top so racks inside do not
-  cover them, refitted after a resize, and can be given a fixed size.
+  most 60% of its width and 30% of its height) and centred in it, refitted after a
+  resize, and can be given a fixed size.
 * **Child locations as linked areas** ([#8](https://github.com/netbox-community/netbox-floorplan-plugin/issues/8)).
   The editor's new **Child Locations** tab adds a location below the floorplan's (or any
   location of the site, for a site floorplan) as a translucent area showing its name and
